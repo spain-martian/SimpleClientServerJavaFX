@@ -26,7 +26,7 @@ import message.Message;
  */
 
 public class ClientFrame extends Application {
-    private static final int defaultPort = 4433;
+    private static final int defaultPort = 4434;
     private ClientController controller = new ClientController(this);
 
     private Button startButton = new Button("Start");

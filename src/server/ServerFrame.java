@@ -23,7 +23,7 @@ import message.Message;
  */
 
 public class ServerFrame extends Application {
-    private static final int defaultPort = 4433;
+    private static final int defaultPort = 4434;
 
     private ServerController controller = new ServerController(this);
 
