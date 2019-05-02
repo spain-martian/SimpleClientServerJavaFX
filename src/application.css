@@ -1,0 +1,14 @@
+.button { 
+   -fx-background-color: red; 
+   -fx-text-fill: white; 
+}
+.label {
+ -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+    -fx-effect: dropshadow( gaussian , rgba(255,255,255,0.5) , 0,0,0,1 );
+}
+.text-field {
+ -fx-text-fill: green; 
+	-fx-font: normal bold 20px 'serif'
+}
