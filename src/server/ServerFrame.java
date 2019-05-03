@@ -114,7 +114,7 @@ public class ServerFrame extends Application {
                     appendLog("Message type not selected.");
                 }
             } else {
-                appendLog("Client not selected.");
+                appendLog("Client not selected.");  
             }
         });
 
