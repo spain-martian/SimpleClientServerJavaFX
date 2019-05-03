@@ -1,6 +1,7 @@
-package client;
+package model;
 
-import message.Message;
+import controller.ClientController;
+import model.Message;
 
 import java.util.TreeMap;
 

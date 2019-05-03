@@ -1,6 +1,4 @@
-package game;
-
-import message.*;
+package model;
 
 import java.util.ArrayList;
 import java.util.Random;

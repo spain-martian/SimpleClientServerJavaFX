@@ -1,5 +1,6 @@
-package client;
+package controller;
 
+import model.ClientGameDriver;
 import javafx.application.Platform;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -11,7 +12,8 @@ import java.util.TreeMap;
 
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
-import message.Message;
+import model.Message;
+import view.ClientFrame;
 
 /**
  * Created by Public on 20-Aug-18.

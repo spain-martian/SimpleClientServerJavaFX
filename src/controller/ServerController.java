@@ -1,11 +1,13 @@
-package server;
+package controller;
 
 import javafx.application.Platform;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import game.GameDriver;
+import model.GameDriver;
+import model.ClientHandlingThread;
+import view.ServerFrame;
 
 /**
  * Created by Vadim Shutenko on 20-Aug-18.

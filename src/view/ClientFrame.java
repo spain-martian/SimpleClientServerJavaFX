@@ -1,5 +1,6 @@
-package client;
+package view;
 
+import controller.ClientController;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -18,10 +19,8 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
-import message.Message;
-import server.ServerController;
-
-import java.rmi.server.ServerCloneException;
+import model.Message;
+import controller.ServerController;
 
 /**
  * Created by Vadim Shutenko on 20-Aug-18.

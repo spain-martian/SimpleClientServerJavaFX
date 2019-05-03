@@ -1,12 +1,13 @@
-package server;
+package model;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-import game.GameDriver;
-import message.Message;
+import controller.ServerController;
+import model.GameDriver;
+import model.Message;
 
 /**
  * Created by Vadim Shutenko on 20-Aug-18.

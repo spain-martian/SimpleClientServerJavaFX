@@ -1,7 +1,6 @@
-package server;
+package view;
 
 import javafx.application.Application;
-import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -15,7 +14,8 @@ import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import java.io.IOException;
 
-import message.Message;
+import model.Message;
+import controller.ServerController;
 
 /**
  * Created by Vadim Shutenko on 20-Aug-18.
@@ -114,7 +114,7 @@ public class ServerFrame extends Application {
                     appendLog("Message type not selected.");
                 }
             } else {
-                appendLog("Client not selected.");  
+                appendLog("Client not selected.");
             }
         });
 
