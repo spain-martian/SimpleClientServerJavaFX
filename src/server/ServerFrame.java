@@ -23,7 +23,6 @@ import message.Message;
  */
 
 public class ServerFrame extends Application {
-    private static final int defaultPort = 4434;
 
     private ServerController controller = new ServerController(this);
 
@@ -36,28 +35,35 @@ public class ServerFrame extends Application {
 
     public void start(Stage stage) {
 
-        TextField port = new TextField("" + defaultPort);
-        TextField maxClients = new TextField("3");
+        TextField port = new TextField("" + ServerController.defaultPort);
+        TextField maxClients = new TextField("" + ServerController.maxNumClients);
         TextField textToSend = new TextField("");
 
-        port.textProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                if (!newValue.matches("\\d{1,6}")) {
-                    port.setText(oldValue);
-                }
+        port.textProperty().addListener((ObservableValue<? extends String> observable, String oldValue, String newValue) -> {
+            if (!newValue.matches("\\d*")) {
+                port.setText(oldValue);
             }
         });
-        maxClients.textProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                if (!newValue.matches("\\d{0,9}?")) {
-                    port.setText(oldValue);
-                }
+        port.focusedProperty().addListener((ObservableValue<? extends Boolean> arg, Boolean oldValue, Boolean newValue) -> {
+            if (!newValue) {
+                port.setText("" + controller.checkPort(port.getText()));
             }
         });
 
-        startButton.setOnAction(e->{
+        maxClients.textProperty().addListener((ObservableValue<? extends String> observable, String oldValue, String newValue) -> {
+            if (!newValue.matches("\\d*")) {
+                maxClients.setText(oldValue);
+            }
+        });
+
+        maxClients.focusedProperty().addListener((ObservableValue<? extends Boolean> arg, Boolean oldValue, Boolean newValue) -> {
+            if (!newValue) {
+                maxClients.setText("" + controller.checkMaxClients(maxClients.getText()));
+            }
+        });
+
+
+        startButton.setOnAction(e -> {
             port.setText("" + controller.checkPort(port.getText()));
             maxClients.setText("" + controller.checkMaxClients(maxClients.getText()));
             if (controller.startServer(port.getText(), maxClients.getText())) {

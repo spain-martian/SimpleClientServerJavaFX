@@ -19,6 +19,9 @@ import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 import message.Message;
+import server.ServerController;
+
+import java.rmi.server.ServerCloneException;
 
 /**
  * Created by Vadim Shutenko on 20-Aug-18.
@@ -26,7 +29,6 @@ import message.Message;
  */
 
 public class ClientFrame extends Application {
-    private static final int defaultPort = 4434;
     private ClientController controller = new ClientController(this);
 
     private Button startButton = new Button("Start");
@@ -43,7 +45,7 @@ public class ClientFrame extends Application {
     private Text nameLabel = new Text("Name");
     private Text comment = new Text("");
 
-    private TextField port = new TextField("" + defaultPort);
+    private TextField port = new TextField("" + ServerController.defaultPort);
     private TextField name = new TextField("Client1");
     private TextField textToSend = new TextField("");
 
@@ -199,7 +201,7 @@ public class ClientFrame extends Application {
         try {
             return Integer.parseInt(port.getText());
         } catch (Exception e) {
-            return defaultPort;
+            return ServerController.defaultPort;
         }
     }
 

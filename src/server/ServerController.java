@@ -12,6 +12,8 @@ import game.GameDriver;
  *
  */
 public class ServerController {
+    public static final int defaultPort = 4434;
+    public static final int maxNumClients = 3;
     private ServerFrame mainFrame;
     //private GameDriver gameDriver;
     private ServerSocket serverSocket;
@@ -71,9 +73,8 @@ public class ServerController {
         int port = 0;
         try {
             port = Integer.parseInt(textPort);
-        } catch (Exception e) {}
-        if (port < 1000) port = 1000;
-        if (port > 8000) port = 8000;
+        } catch (Exception ignore) {}
+        if (port < 1024 || port > 65535) port = defaultPort;
         return port;
     }
 
