@@ -10,171 +10,240 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.TreeMap;
 
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Line;
+import model.PointRC;
 import model.Message;
 import view.ClientFrame;
 
 /**
- * Created by Public on 20-Aug-18.
+ * Created by Vadim Shutenko on 20-Aug-18.
  */
 
 public class ClientController {
     private ClientFrame frame;
-    private Socket socket;
     private ClientGameDriver gameDriver;
+
+    private Socket socket;
     private static final String hostName = "localhost";
     private ObjectOutputStream requestStream;
     private ObjectInputStream answerStream;
+    private Thread clientThread;
 
-    ClientController(ClientFrame frame) {
+    private int nScreenRows;
+    private int nScreenCols;
+    private int addRow;
+    private int addCol; //to get the real coordinates
+
+    private boolean ballOut;
+
+    public ClientController(ClientFrame frame, int nScreenRows, int nScreenCols) {
         this.frame = frame;
-        nLines = frame.getnLines();
+        this.nScreenRows = nScreenRows;
+        this.nScreenCols = nScreenCols;
     }
 
-    boolean startClient() {
-        int port = frame.getPort();
-        gameDriver = new ClientGameDriver(this);
-        setHisColor(0);
-        dRow = -nLines / 2;
-        dCol = -nLines / 2;
-        setColors(0, 0, null, null);
+    public boolean startClient() {
 
-        InetAddress ina = null;
+        if (!initializeGame()) {
+            stopClient();
+            return false;
+        }
+
+        addRow = 0;
+        addCol = 0;
+        gameDriver = new ClientGameDriver(nScreenRows, nScreenCols, 0, 0);
+
+        frame.redrawMaze();
+
+        clientThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    boolean end = false;
+                    while (!end) {
+                        frame.appendLog("Waiting for input.");
+                        Message answer = (Message) answerStream.readObject();
+                        frame.appendLog("message received: " + answer);
+                        if (answer.getType() == Message.Type.END) {
+                            end = true;
+                        }
+                        if (answer.getType() == Message.Type.ANSWER) {
+                           react(answer);
+                        }
+                        try {
+                            Thread.sleep(300);
+                        } catch (InterruptedException ex) {
+                            Thread.currentThread().interrupt();
+                            //System.out.println("Client controller thread interrupted");
+                            break;
+                        }
+                    }
+                } catch (Exception ex) {
+                    frame.appendLog("Error reading socket.");
+                    ex.printStackTrace();
+                }
+                stopClient();
+            }
+        });
+        clientThread.start();
+
+        return true;
+    }
+
+    private boolean initializeGame() {
         try {
-            ina = InetAddress.getByName(hostName);
+            InetAddress ina = InetAddress.getByName(hostName);
             try {
-                socket = new Socket(ina, port);
+                socket = new Socket(ina, frame.getPort());
                 try {
                     requestStream = new ObjectOutputStream(socket.getOutputStream());
                     requestStream.flush();
                     answerStream = new ObjectInputStream(socket.getInputStream());
 
                     sendMessage(new Message(Message.Type.START, frame.getName()));
-                    appendLog("client: start message sent, waiting for answer.");
+                    frame.appendLog("client: start message sent, waiting for answer.");
 
                     Message answer = (Message) answerStream.readObject();
                     if (answer.getType() == Message.Type.ANSWER) {
-                        appendLog("answer: " + answer);
+                        frame.appendLog("answer: " + answer);
                     } else {
                         if (answer.getType() == Message.Type.END) {
-                            appendLog("Server disconnected.");
+                            frame.appendLog("Server disconnected.");
                             return false;
                         } else {
-                            appendLog("Client: unexpected message: " + answer);
+                            frame.appendLog("Client: unexpected message: " + answer);
                         }
                     }
                 } catch (Exception e) {
-                    appendLog("IO error " + e);
-                    cancelClient();
+                    frame.appendLog("IO error " + e);
                     return false;
                 }
             } catch (IOException ex) {
-                appendLog("Cannot connect to the host");
+                frame.appendLog("Cannot connect to the host");
                 return false;
             }
         } catch (UnknownHostException u) {
-            appendLog("Cannot find host name");
+            frame.appendLog("Cannot find host name");
             return false;
         }
-
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    boolean end = false;
-                    while (!end) {
-                        appendLog("Waiting for input.");
-                        Message answer = (Message) answerStream.readObject();
-                        appendLog("message received: " + answer);
-                        if (answer.getType() == Message.Type.END) {
-                            end = true;
-                        }
-                        if (answer.getType() == Message.Type.ANSWER) {
-                            gameDriver.react(answer);
-                        }
-                    }
-                } catch (Exception ex) {
-                    appendLog("Error reading socket.");
-                    cancelClient();
-                    frame.informClientStopped();
-                    //ex.printStackTrace();
-                }
-                cancelClient();
-            }
-        }).start();
         return true;
     }
 
-    void sendMessage(Message message) {
+    public void react(Message message) {
+        String comment;
+        if (message.getType() == Message.Type.ANSWER) {
+            String command = message.getData();
+            if (command.startsWith("move ")) {
+                char dest = command.charAt(5); //u, d, l, r
+                if (command.endsWith("exit")) {
+                    comment = "Congratulations! You have found the exit!";
+                    gameDriver.addWall(dest, false);
+                    gameDriver.move(dest);
+                    ballOut = true;
+                    updateMaze();
+                } else {
+                    if (command.endsWith("stopped")) {
+                        comment = "You are out already.";
+                    } else {
+                        if (command.endsWith("yes")) {
+                            gameDriver.addWall(dest, false);
+                            gameDriver.move(dest);
+                            comment = command.substring(0, 7) + ": moved";
+                            updateMaze();
+                        } else {
+                            if (command.endsWith("no")) {
+                                gameDriver.addWall(dest, true);
+                                System.out.println("Game no move: " + dest);
+                                comment = command.substring(0, 7) + ": wall";
+                                updateMaze();
+                            } else {
+                                comment = "Unrecognized command: " + command;
+                            }
+                        }
+                    }
+                }
+                setComment(comment);
+            }
+        }
+    }
 
+    private void updateMaze() {
+        int screenRow = gameDriver.getCurrentRow() + addRow;
+        int screenCol = gameDriver.getCurrentCol() + addCol;
+        if (screenRow < 0) {
+            addRow -= screenRow;
+        }
+        if (screenCol < 0) {
+            addCol -= screenCol;
+        }
+        if (screenRow >= nScreenRows) {
+            addRow -= screenRow - nScreenRows + 1;
+        }
+        if (screenCol >= nScreenCols) {
+            addCol -= screenCol - nScreenCols + 1;
+        }
+        System.out.println("add r, c " + addRow + " " +  addCol);
+        frame.redrawMaze();
+    }
+
+    public void sendMessage(Message message) {
         try {
             requestStream.writeObject(message);
             requestStream.flush();
             requestStream.reset();
-            appendLog(message + " sent.");
+            frame.appendLog(message + " sent.");
         } catch (IOException e) {
-            appendLog("Error sending message " + e);
+            frame.appendLog("Error sending message " + e);
         }
     }
 
-    void appendLog(String text) {
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                frame.appendLog(text);
-            }
-        });
-    }
-
-    void cancelClient() {
-        informClientStopped();
+    public void stopClient() {
         try {
+            requestStream.close();
             answerStream.close();
-        } catch (Exception e) {
+        } catch (Exception ignore) {
         }
         try {
             socket.close();
-            appendLog("socket closed");
+            frame.appendLog("socket closed");
         } catch (Exception e) {
-            appendLog("Error closing client socket.");
+            frame.appendLog("Error closing client socket.");
         }
-        appendLog("Client is stopped.");
+        frame.informClientStopped();
     }
 
-    void informClientStopped() {
+    public void setComment(String text) {
+        frame.setComment(text);
+    }
+
+    public Boolean getHWall(int r, int c) {
+        return gameDriver.getHWall(r - addRow, c - addCol);
+    }
+
+    public Boolean getVWall(int r, int c) {
+        return gameDriver.getVWall(r - addRow, c - addCol);
+    }
+
+    public Boolean isCellVisited(int r, int c) {
+        return gameDriver.isCellVisited(r - addRow, c - addCol);
+    }
+
+    public int getCurrentRow() {
+        System.out.println("scr r, c " + (gameDriver.getCurrentRow() + addRow) + " " +  (gameDriver.getCurrentCol() + addCol));
+        return gameDriver.getCurrentRow() + addRow;
+    }
+
+    public int getCurrentCol() {
+        System.out.println("scr r, c " + (gameDriver.getCurrentRow() + addRow) + " " +  (gameDriver.getCurrentCol() + addCol));
+        return gameDriver.getCurrentCol() + addCol;
+    }
+
+   /*
+    public void setColors(int posR, int posC,
+                   TreeMap <PointRC, Boolean> hWalls,
+                   TreeMap <PointRC, Boolean> vWalls) {
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
-                frame.informClientStopped();
-            }
-        });
-    }
-
-    void setComment(String text) {
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                frame.setComment(text);
-            }
-        });
-    }
-
-    private int nLines;
-    private int dRow;
-    private int dCol;
-
-    void setColors(int posR, int posC,
-                   TreeMap <ClientGameDriver.Coord, Boolean> hWalls,
-                   TreeMap <ClientGameDriver.Coord, Boolean> vWalls) {
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                Line[][] vLines = frame.getVLines();
-                Line[][] hLines = frame.getHLines();
-                Color[] colors = frame.getColors();
-
                 if (posR < dRow) dRow--;
                 if (posC < dCol) dCol--;
                 if (posR >= dRow + nLines) dRow++;
@@ -184,33 +253,47 @@ public class ClientController {
                     for (int c = 0; c < vLines[r].length; c++) {
                         Boolean wall = null;
                         if (vWalls != null) {
-                            wall = vWalls.get(gameDriver.new Coord(r + dRow, c + dCol));
+                            wall = vWalls.get(new PointRC(r + dRow, c + dCol));
                         }
-                        int col = (wall == null) ? 0 : (wall ? 2 : 1);
-                        vLines[r][c].setStroke(colors[col]);
+                        int ind = (wall == null) ? 0 : (wall ? 2 : 1);
+                        vLines[r][c].setStroke(colors[ind]);
                     }
                 }
                 for (int r = 0; r < hLines.length; r++) {
                     for (int c = 0; c < hLines[r].length; c++) {
                         Boolean wall = null;
                         if (hWalls != null) {
-                            wall = hWalls.get(gameDriver.new Coord(r + dRow, c + dCol));
+                            wall = hWalls.get(new PointRC(r + dRow, c + dCol));
                         }
-                        int col = (wall == null) ? 0 : (wall ? 2 : 1);
-                        hLines[r][c].setStroke(colors[col]);
+                        int ind = (wall == null) ? 0 : (wall ? 2 : 1);
+                        hLines[r][c].setStroke(colors[ind]);
                     }
                 }
-                frame.setHim(posR - dRow, posC - dCol);
+                frame.setBallRC(posR - dRow, posC - dCol);
             }
         });
     }
 
-    void setHisColor(int color) {
+    public void setHisColor(int color) {
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
-                frame.setHisColor(color);
+                frame.setBallOut();
             }
         });
+    }
+*/
+
+    public boolean isBallOut() {
+        return ballOut;
+    }
+
+    public void closeThread() {
+        try {
+            socket.close();
+        } catch (Exception ignore) {}
+        if (clientThread != null) {
+            clientThread.interrupt();
+        }
     }
 }

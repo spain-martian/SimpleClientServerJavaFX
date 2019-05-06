@@ -5,56 +5,58 @@ import java.util.Stack;
 
 /**
  * Created by Vadim Shutenko on 29-Aug-18.
+ *
+ * Class Maze creates and keeps a random maze
  */
 public class Maze {
-    private int nrRows;
-    private int nrCols;
-
+    private int numRows;
+    private int numCols;
     private int[][] vWalls;
     private int[][] hWalls;
+    private Random random = new Random();
 
-    public Maze(int nrRows, int nrCols) {
-        if (nrCols < 2 || nrRows < 2 || nrCols > 100 || nrRows > 100) {
-            throw new IllegalArgumentException("arguments out of limits (3-100)");
+    public Maze(int numRows, int numCols) {
+        if (numCols < 3 || numRows < 3 || numCols > 100 || numRows > 100) {
+            throw new IllegalArgumentException("Maze dimensions are out of limits (3-100)");
         }
+        this.numRows = numRows;
+        this.numCols = numCols;
 
-        this.nrRows = nrRows;
-        this.nrCols = nrCols;
+        vWalls = new int[numRows][numCols + 1];
+        hWalls = new int[numRows + 1][numCols];
 
-        vWalls = new int[nrRows][nrCols + 1];
-        hWalls = new int[nrRows + 1][nrCols];
-
-        for (int x = 0; x < nrCols + 1; x++) {
-            for (int y = 0; y < nrRows; y++) {
+        for (int x = 0; x < numCols + 1; x++) {
+            for (int y = 0; y < numRows; y++) {
                 vWalls[y][x] = 1;
             }
         }
-        for (int x = 0; x < nrCols; x++) {
-            for (int y = 0; y < nrRows + 1; y++) {
+        for (int x = 0; x < numCols; x++) {
+            for (int y = 0; y < numRows + 1; y++) {
                 hWalls[y][x] = 1;
             }
         }
 
+        generateMaze(random.nextInt(numRows), random.nextInt(numCols));
     }
 
-    public void generateMaze(int r0, int c0) {
-        if (r0 < 0 || c0 < 0 || r0 >= nrRows || c0 >= nrCols) {
-            throw new IllegalArgumentException("arguments out of maze limits " + nrRows + ", " + nrCols);
-        }
-
-        for (int x = 0; x < nrCols + 1; x++) {
-            for (int y = 0; y < nrRows; y++) {
+    /**
+     * Generates maze beginning from (r0, c0) cell
+     * @param r0
+     * @param c0
+     */
+    private void generateMaze(int r0, int c0) {
+        for (int x = 0; x < numCols + 1; x++) {
+            for (int y = 0; y < numRows; y++) {
                 vWalls[y][x] = 1;
             }
         }
-        for (int x = 0; x < nrCols; x++) {
-            for (int y = 0; y < nrRows + 1; y++) {
+        for (int x = 0; x < numCols; x++) {
+            for (int y = 0; y < numRows + 1; y++) {
                 hWalls[y][x] = 1;
             }
         }
 
-        boolean[][] visited = new boolean[nrRows][nrCols];
-        Random random = new Random();
+        boolean[][] visited = new boolean[numRows][numCols];
         Stack<Cell> stack = new Stack<>();
         stack.push(new Cell(r0, c0));
         Cell[] cellsN = new Cell[4];  //for unvisited neighbours
@@ -68,10 +70,10 @@ public class Maze {
             if (cell.c > 0 && !visited[cell.r][cell.c - 1]) {
                 cellsN[kN++] = new Cell(cell.r, cell.c - 1);
             }
-            if (cell.r < nrRows - 1 && !visited[cell.r + 1][cell.c]) {
+            if (cell.r < numRows - 1 && !visited[cell.r + 1][cell.c]) {
                 cellsN[kN++] = new Cell(cell.r + 1, cell.c);
             }
-            if (cell.c < nrCols - 1 && !visited[cell.r][cell.c + 1]) {
+            if (cell.c < numCols - 1 && !visited[cell.r][cell.c + 1]) {
                 cellsN[kN++] = new Cell(cell.r, cell.c + 1);
             }
 
@@ -98,15 +100,15 @@ public class Maze {
         String s = "";
         char blank = ' ';
         char cross = '+'; //'·';
-        for (int r = 0; r < nrRows + 1; r++) {
-            for (int c = 0; c < nrCols; c++) {
+        for (int r = 0; r < numRows + 1; r++) {
+            for (int c = 0; c < numCols; c++) {
                 s += cross;
                 if (hWalls[r][c] > 0) s += '-';
                 else s += blank;
             }
             s += cross + "\n";
-            if (r == nrRows) break;
-            for (int c = 0; c < nrCols + 1; c++) {
+            if (r == numRows) break;
+            for (int c = 0; c < numCols + 1; c++) {
                 if (vWalls[r][c] > 0) s += '|';
                 else s += blank;
                 s += blank;
@@ -118,19 +120,19 @@ public class Maze {
     }
 
     public int setRandomExit() {
-        int limit = (nrCols + nrRows) * 2;
+        int limit = (numCols + numRows) * 2;
         int n = new Random().nextInt(limit);
 
-        if (n < nrCols) {
+        if (n < numCols) {
             hWalls[0][n] = 0;
         } else {
-            if (n < 2 * nrCols) {
-                hWalls[nrRows][n - nrCols] = 0;
+            if (n < 2 * numCols) {
+                hWalls[numRows][n - numCols] = 0;
             } else {
-                if (n < 2 * nrCols + nrRows) {
-                    vWalls[n - 2 * nrCols][0] = 0;
+                if (n < 2 * numCols + numRows) {
+                    vWalls[n - 2 * numCols][0] = 0;
                 } else {
-                    vWalls[n - (2 * nrCols + nrRows)][nrCols] = 0;
+                    vWalls[n - (2 * numCols + numRows)][numCols] = 0;
                 }
             }
         }
@@ -138,13 +140,15 @@ public class Maze {
     }
     
     public boolean isWall(int r, int c, int dest) {  //0-up, 1-right, 2-down, 3-left
-        if (r < 0 || c < 0 || r >= nrRows || c >= nrCols) {
-            throw new IllegalArgumentException("arguments out of maze limits " + nrRows + ", " + nrCols);
+        if (r < 0 || c < 0 || r >= numRows || c >= numCols) {
+            throw new IllegalArgumentException("arguments out of maze bounds " + numRows + ", " + numCols);
         }
-        if (dest == 0 && hWalls[r][c] > 0) return true;
-        if (dest == 2 && hWalls[r + 1][c] > 0) return true;
-        if (dest == 1 && vWalls[r][c + 1] > 0) return true;
-        if (dest == 3 && vWalls[r][c] > 0) return true;
+        if (dest == 0 && hWalls[r][c] > 0
+            || dest == 2 && hWalls[r + 1][c] > 0
+            || dest == 1 && vWalls[r][c + 1] > 0
+            || dest == 3 && vWalls[r][c] > 0)  {
+            return true;
+        }
         return false;
     }
     
@@ -164,13 +168,14 @@ public class Maze {
         maze.setRandomExit();
         System.out.println(maze);
     }
-*/
-    public int getNrRows() {
-        return nrRows;
+    */
+
+    public int getNumRows() {
+        return numRows;
     }
 
-    public int getNrCols() {
-        return nrCols;
+    public int getNumCols() {
+        return numCols;
     }
 
 }

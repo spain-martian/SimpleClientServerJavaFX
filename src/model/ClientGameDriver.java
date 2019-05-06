@@ -1,8 +1,10 @@
 package model;
 
 import controller.ClientController;
-import model.Message;
+import view.ClientFrame;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
@@ -11,90 +13,71 @@ import java.util.TreeMap;
  */
 
 public class ClientGameDriver {
-    private ClientController controller;
 
-    private TreeMap <Coord, Boolean> hWalls = new TreeMap<>();
-    private TreeMap <Coord, Boolean> vWalls = new TreeMap<>();
+    private TreeMap <PointRC, Boolean> hWalls = new TreeMap<>();
+    private TreeMap <PointRC, Boolean> vWalls = new TreeMap<>();
+    private Set<PointRC> visited = new HashSet<>();
+    private int nVisited;
 
-    private int posRow = 0;
-    private int posCol = 0;
-    private String comment;
+    private int nRows;
+    private int nCols;
+    private int posRow;  //current position
+    private int posCol;
 
-    public ClientGameDriver(ClientController controller) {
-        this.controller = controller;
+    public ClientGameDriver(int nRows, int nCols, int posRow, int posCol) {
+        this.nRows = nRows;
+        this.nCols = nCols;
+        this.posRow = posRow;
+        this.posCol = posCol;
+
+        nVisited = 1;
+        visited.add(new PointRC(posRow, posCol));
     }
 
-    public void react(Message message) {
-        if (message.getType() == Message.Type.ANSWER) {
-            String command = message.getData();
-            if (command.startsWith("move ")) {
-                if (command.endsWith("exit")) {
-                    comment = "Congatulations! You have found the exit.";
-                    move(command.charAt(5));
-                    controller.setHisColor(1);
-                } else {
-                    if (command.endsWith("stopped")) {
-                        comment = "You are out already.";
-                    } else {
-                        if (command.endsWith("yes")) {
-                            addWall(command.charAt(5), false);
-                            move(command.charAt(5));
-                            comment = command.substring(0, 7) + ": moved";
-                        } else {
-                            if (command.endsWith("no")) {
-                                addWall(command.charAt(5), true);
-                                comment = command.substring(0, 7) + ": wall";
-                            } else {
-                                comment = "Unrecognized command: " + command;
-                            }
-                        }
-                    }
-                }
-                controller.setComment(comment);
-                controller.setColors(posRow, posCol, hWalls, vWalls);
-            }
-        }
-    }
-
-    private void addWall(char d, boolean wall) {
+    public void addWall(char d, boolean isWall) {
         if (d == 'u') {
-            hWalls.put(new Coord(posRow, posCol), wall);
+            hWalls.put(new PointRC(posRow, posCol), isWall);
         }
         if (d == 'd') {
-            hWalls.put(new Coord(posRow + 1, posCol), wall);
+            hWalls.put(new PointRC(posRow + 1, posCol), isWall);
         }
         if (d == 'l') {
-            vWalls.put(new Coord(posRow, posCol), wall);
+            vWalls.put(new PointRC(posRow, posCol), isWall);
         }
         if (d == 'r') {
-            vWalls.put(new Coord(posRow, posCol + 1), wall);
+            vWalls.put(new PointRC(posRow, posCol + 1), isWall);
         }
     }
 
-    private void move(char d) {
+    public void move(char d) {
         if (d == 'u') posRow --;
         if (d == 'd') posRow ++;
         if (d == 'l') posCol --;
         if (d == 'r') posCol ++;
+        System.out.println("Game move: " + d + " (r, c)= " + posRow + " " + posCol);
+        visited.add(new PointRC(posRow, posCol));
     }
 
-    class Coord implements Comparable{
-        int r;
-        int c;
+    public Boolean getHWall(int r, int c) {
+        PointRC point = new PointRC(r, c);
+        return hWalls.get(point);
+    }
 
-        public Coord(int r, int c) {
-            this.r = r;
-            this.c = c;
-        }
+    public Boolean getVWall(int r, int c) {
+        PointRC point = new PointRC(r, c);
+        return vWalls.get(point);
+    }
 
-        @Override
-        public int compareTo(Object o) {
-            Coord other = (Coord) o;
-            if (r > other.r) return 1;
-            if (r < other.r) return -1;
-            if (c > other.c) return 1;
-            if (c < other.c) return -1;
-            return 0;
-        }
+    public boolean isCellVisited(int r, int c) {
+        System.out.println("vis rc" + r + " " + c+ " " + visited.contains(new PointRC(r, c)));
+        return visited.contains(new PointRC(r, c));
+    }
+
+    public int getCurrentRow() {
+        return posRow;
+    }
+
+    public int getCurrentCol() {
+        return posCol;
     }
 }

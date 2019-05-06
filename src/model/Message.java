@@ -7,7 +7,6 @@ import java.io.Serializable;
  *
  */
 
-
 public class Message implements Serializable {
 
     private static int counter;

@@ -1,12 +1,11 @@
 package controller;
 
-import javafx.application.Platform;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.LinkedList;
+import java.util.List;
 
-import model.GameDriver;
-import model.ClientHandlingThread;
 import view.ServerFrame;
 
 /**
@@ -16,58 +15,56 @@ import view.ServerFrame;
 public class ServerController {
     public static final int defaultPort = 4434;
     public static final int maxNumClients = 3;
-    private ServerFrame mainFrame;
-    //private GameDriver gameDriver;
+    private ServerFrame ui;
     private ServerSocket serverSocket;
-    private ClientHandlingThread[] clientThreads;
+    private Thread controllerThread;
+    private List<ClientHandlingThread> clientThreads;
 
-    ServerController(ServerFrame frame) {
-        mainFrame = frame;
+    public ServerController(ServerFrame frame) {
+        ui = frame;
     }
 
-    boolean startServer(String textPort, String maxClients) {
+    public boolean startServer(String textPort, String maxClients) {
         int port = checkPort(textPort);
         int max = checkMaxClients(maxClients);
-        //gameDriver = new GameDriver();
 
-        clientThreads = new ClientHandlingThread[max];
-        mainFrame.getClientsList().clear();
+        clientThreads = new LinkedList<>();
+        ui.refreshClients(new LinkedList<String>(), new LinkedList<String>());
 
         serverSocket = null;
         try {
             serverSocket = new ServerSocket(port);
-            appendLog("Server started on port: " + port);
-
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    boolean noproblem = true;
-                    while (noproblem) {
-                        try {
-                            Socket socket = serverSocket.accept();
-                            int i;
-                            for (i = 0; i < clientThreads.length; i ++) {
-                                if (clientThreads[i] == null) break;
-                            }
-                            if (i >= 0 && i < clientThreads.length) {
-                                clientThreads[i] = new ClientHandlingThread(socket,
-                                        ServerController.this, new GameDriver());
-                                new Thread(clientThreads[i]).start();
-                                addClientFromList(clientThreads[i].getName());
-                            } else {
-                                socket.close();
-                            }
-                        } catch (IOException ex) {
-                            //appendLog("Problem accepting client socket.");
-                            noproblem = false;
-                        }
-                    }
-                }
-            }).start();
-        } catch (IOException io) {
-            appendLog("Can not create server socket.");
+            ui.appendLog("Server started on port: " + port);
+        } catch (Exception io) {
+            ui.appendLog("Can not create server socket.");
             return false;
         }
+
+        controllerThread = new Thread(() -> {
+            while (true) {
+                if (clientThreads.size() < max) {
+                    try {
+                        Socket socket = serverSocket.accept();
+                        ClientHandlingThread clientThread = new ClientHandlingThread(socket, this, ui);
+                        clientThread.start();
+                        clientThreads.add(clientThread);
+                        refreshGuiClients();
+                    } catch (IOException ex) {
+                        ui.appendLog("Problem accepting client socket.");
+                    }
+                }
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    //System.out.println("Server controller thread interrupted");
+                    break;
+                }
+            }
+        });
+
+        controllerThread.setName("ServerController");
+        controllerThread.start();
         return true;
     }
 
@@ -81,112 +78,57 @@ public class ServerController {
     }
 
     public int checkMaxClients(String text) {
-        int max = 0;
+        int numClients = 0;
         try {
-            max = Integer.parseInt(text);
-        } catch (Exception e) {}
-        if (max < 1) max = 1;
-        if (max > 6) max = 6;
-        return max;
+            numClients = Integer.parseInt(text);
+        } catch (Exception ignore) {}
+        if (numClients < 1) numClients = 1;
+        if (numClients > maxNumClients) numClients = maxNumClients;
+        return numClients;
     }
 
-    void disconnectAllClients() {
+    public synchronized boolean disconnectClient(String name) {
+        for (ClientHandlingThread clientThread: clientThreads) {
+            if (clientThread.getClientName().equals(name)) {
+                clientThread.disconnect();
+                ui.appendLog("Client " + name + " disconnected");
+                clientThreads.remove(clientThread);
+                refreshGuiClients();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public synchronized void disconnectAllClients() {
         if (clientThreads != null) {
-            for (int i = 0; i < clientThreads.length; i++) {
-                if (clientThreads[i] != null) {
-                    removeClientFromList(clientThreads[i].getName());
-                    disconnectClient(i);
-                }
-            }
-            try {
-                serverSocket.close();
-            } catch (Exception e) {
-            }
-            appendLog("Server closed.");
-        }
-    }
-
-    int getIndexForClientName(String name) {
-        for (int i = 0; i < clientThreads.length; i ++) {
-            if (clientThreads[i] != null) {
-                if (clientThreads[i].getName().equals(name)) {
-                    return i;
-                }
+            while (clientThreads.size() > 0) {
+                disconnectClient(clientThreads.get(0).getClientName());
             }
         }
-        return -1;
     }
 
-    boolean disconnectClient(String name) {
-        int i = getIndexForClientName(name);
-        if (i >= 0) {
-            disconnectClient(i);
-            removeClientFromList(name);
-            return true;
+    public synchronized void refreshGuiClients() {
+        List<String> clients = new LinkedList<>();
+        List<String> statuses = new LinkedList<>();
+
+        for (ClientHandlingThread clientThread: clientThreads) {
+            clients.add(clientThread.getClientName());
+            statuses.add(clientThread.getClientStatus());
         }
-        return false;
+        ui.refreshClients(clients, statuses);
     }
 
-    private boolean disconnectClient(int i) {
-        if (clientThreads[i] != null) {
-            mainFrame.appendLog("Sending END to client.");
-            clientThreads[i].sendEndToClient();
-            try {
-                Thread.sleep(100);
-            } catch (Exception ex) {
-            }
-            try {
-                mainFrame.appendLog("Closing client socket.");
-                clientThreads[i].closeSocket();
-            } catch (Exception e) {
-            }
-            clientThreads[i] = null;
-            return true;
+    public synchronized void changeClientName(String name, String newName) {
+        refreshGuiClients();
+    }
+
+    public void closeThread() {
+        try {
+            serverSocket.close();
+        } catch (Exception ignore) {}
+        if(controllerThread != null) {
+            controllerThread.interrupt();
         }
-        return false;
-    }
-
-
-    void informThatClientDisconnected(String name) {
-        removeClientFromList(name);
-    }
-
-    //Javafx cannot update UI from not the main thread
-    private void removeClientFromList(String name) {
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                // Update UI here.
-                mainFrame.getClientsList().remove(name);
-            }
-        });
-    }
-
-    //Javafx cannot update UI from not the main thread
-    private void addClientFromList(String name) {
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                mainFrame.getClientsList().add(name);
-            }
-        });
-    }
-
-    void appendLog(String text) {
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                mainFrame.appendLog(text);
-            }
-        });
-    }
-
-    synchronized void changeClientName(String name, String newName) {
-        removeClientFromList(name);
-        addClientFromList(newName);
-    }
-
-    ClientHandlingThread[] getClientThreads() {
-        return clientThreads;
     }
 }
