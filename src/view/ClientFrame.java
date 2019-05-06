@@ -73,6 +73,7 @@ public class ClientFrame extends Application {
         port.setPrefWidth(100);
         inputs.getChildren().addAll(portLabel, port, nameLabel, name);
         inputs.setSpacing(10);
+        inputs.setAlignment(Pos.CENTER);
 
         HBox buttons = new HBox();
         buttons.getChildren().addAll(startButton, stopButton);
@@ -80,6 +81,7 @@ public class ClientFrame extends Application {
         buttons.setAlignment(Pos.CENTER);
 
         log.setPrefWidth(wRect);
+        log.setMinWidth(400);
         log.setDisable(true);
 
         VBox vBox = new VBox();

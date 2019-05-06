@@ -237,53 +237,6 @@ public class ClientController {
         return gameDriver.getCurrentCol() + addCol;
     }
 
-   /*
-    public void setColors(int posR, int posC,
-                   TreeMap <PointRC, Boolean> hWalls,
-                   TreeMap <PointRC, Boolean> vWalls) {
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                if (posR < dRow) dRow--;
-                if (posC < dCol) dCol--;
-                if (posR >= dRow + nLines) dRow++;
-                if (posC >= dCol + nLines) dCol++;
-
-                for (int r = 0; r < vLines.length; r++) {
-                    for (int c = 0; c < vLines[r].length; c++) {
-                        Boolean wall = null;
-                        if (vWalls != null) {
-                            wall = vWalls.get(new PointRC(r + dRow, c + dCol));
-                        }
-                        int ind = (wall == null) ? 0 : (wall ? 2 : 1);
-                        vLines[r][c].setStroke(colors[ind]);
-                    }
-                }
-                for (int r = 0; r < hLines.length; r++) {
-                    for (int c = 0; c < hLines[r].length; c++) {
-                        Boolean wall = null;
-                        if (hWalls != null) {
-                            wall = hWalls.get(new PointRC(r + dRow, c + dCol));
-                        }
-                        int ind = (wall == null) ? 0 : (wall ? 2 : 1);
-                        hLines[r][c].setStroke(colors[ind]);
-                    }
-                }
-                frame.setBallRC(posR - dRow, posC - dCol);
-            }
-        });
-    }
-
-    public void setHisColor(int color) {
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                frame.setBallOut();
-            }
-        });
-    }
-*/
-
     public boolean isBallOut() {
         return ballOut;
     }

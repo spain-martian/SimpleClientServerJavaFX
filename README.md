@@ -1,0 +1,1 @@
+This is a tutorial maze game. Client - Server architecture. TCP protocol. JavaFX.
