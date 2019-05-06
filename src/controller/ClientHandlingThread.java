@@ -12,6 +12,7 @@ import view.ServerFrame;
 /**
  * Created by Vadim Shutenko on 20-Aug-18.
  *
+ * Handles one client's connection
  */
 
 public class ClientHandlingThread extends Thread {
@@ -27,6 +28,12 @@ public class ClientHandlingThread extends Thread {
     private ObjectInputStream inputStream;
     private ObjectOutputStream outputStream;
 
+    /**
+     * Constructor
+     * @param socket    socket
+     * @param controller    server controller
+     * @param ui            Gui frame
+     */
     public ClientHandlingThread(Socket socket, ServerController controller, ServerFrame ui) {
         this.socket = socket;
         this.controller = controller;
@@ -35,10 +42,11 @@ public class ClientHandlingThread extends Thread {
 
         id = ++lastId;
         name = "#" + id;
-
-        //driver.addPlayer(id); ///??? delete player
     }
 
+    /**
+     * Main thread
+     */
     public void run() {
         boolean process = true;
 
@@ -51,7 +59,7 @@ public class ClientHandlingThread extends Thread {
                     ui.appendLog("Client's START message received: " + message.getData());
                     if (message.getData().length() > 0) {  //client's name
                         String newName = name + " " + message.getData();
-                        controller.changeClientName(name, newName);
+                        controller.refreshGuiClients();
                         name = newName;
                     }
                     sendMessage(message.justAnswer("START accepted"));
@@ -98,14 +106,24 @@ public class ClientHandlingThread extends Thread {
             ui.appendLog("Cannot open streams.");
         }
 
-        disconnect();
+        closeSocket();
+        controller.refreshGuiClients();
     }
 
+    /**
+     * Sends message to client
+     *
+     * @param message
+     * @throws IOException
+     */
     public synchronized void sendMessage(Message message) throws IOException {
         outputStream.writeObject(message);
         outputStream.flush();
     }
 
+    /**
+     * Disconnects a client
+     */
     public void disconnect() {
         ui.appendLog("Sending 'END' to client.");
         try {
@@ -117,7 +135,16 @@ public class ClientHandlingThread extends Thread {
         closeSocket();
     }
 
+    /**
+     * Closes socket and used streams
+     */
     public void closeSocket() {
+        try {
+            outputStream.close();
+        } catch (Exception ignore) {}
+        try {
+            inputStream.close();
+        } catch (Exception ignore) {}
         try {
             socket.close();
             ui.appendLog("Client socket closed.");

@@ -41,8 +41,8 @@ public class Maze {
 
     /**
      * Generates maze beginning from (r0, c0) cell
-     * @param r0
-     * @param c0
+     * @param r0    row     (y)
+     * @param c0    column  (x)
      */
     private void generateMaze(int r0, int c0) {
         for (int x = 0; x < numCols + 1; x++) {

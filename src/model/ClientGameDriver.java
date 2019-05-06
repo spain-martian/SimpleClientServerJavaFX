@@ -17,20 +17,11 @@ public class ClientGameDriver {
     private TreeMap <PointRC, Boolean> hWalls = new TreeMap<>();
     private TreeMap <PointRC, Boolean> vWalls = new TreeMap<>();
     private Set<PointRC> visited = new HashSet<>();
-    private int nVisited;
 
-    private int nRows;
-    private int nCols;
-    private int posRow;  //current position
-    private int posCol;
+    private int posRow = 0;  //current position
+    private int posCol = 0;
 
-    public ClientGameDriver(int nRows, int nCols, int posRow, int posCol) {
-        this.nRows = nRows;
-        this.nCols = nCols;
-        this.posRow = posRow;
-        this.posCol = posCol;
-
-        nVisited = 1;
+    public ClientGameDriver() {
         visited.add(new PointRC(posRow, posCol));
     }
 
@@ -54,7 +45,7 @@ public class ClientGameDriver {
         if (d == 'd') posRow ++;
         if (d == 'l') posCol --;
         if (d == 'r') posCol ++;
-        System.out.println("Game move: " + d + " (r, c)= " + posRow + " " + posCol);
+        //System.out.println("Game move: " + d + " (r, c)= " + posRow + " " + posCol);
         visited.add(new PointRC(posRow, posCol));
     }
 
@@ -69,7 +60,7 @@ public class ClientGameDriver {
     }
 
     public boolean isCellVisited(int r, int c) {
-        System.out.println("vis rc" + r + " " + c+ " " + visited.contains(new PointRC(r, c)));
+        //System.out.println("vis rc" + r + " " + c+ " " + visited.contains(new PointRC(r, c)));
         return visited.contains(new PointRC(r, c));
     }
 

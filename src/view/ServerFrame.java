@@ -19,7 +19,10 @@ import java.util.List;
 
 /**
  * Created by Vadim Shutenko on 20-Aug-18.
- *
+ */
+
+/**
+ * Server Gui
  */
 
 public class ServerFrame extends Application {
@@ -88,6 +91,9 @@ public class ServerFrame extends Application {
         });
     }
 
+    /**
+     * adds listeners to controls
+     */
     private void addListeners() {
         port.textProperty().addListener((ObservableValue<? extends String> observable, String oldValue, String newValue) -> {
             if (!newValue.matches("\\d*")) {
@@ -141,14 +147,24 @@ public class ServerFrame extends Application {
         stopServer();
     }
 
+    /**
+     * Appends text log window
+     *
+     * @param text
+     */
     public synchronized void appendLog(String text) {
-        //Javafx cannot update UI from not the main thread
         Platform.runLater(() -> {
             log.appendText(text);
             log.appendText("\n");
         });
     }
 
+    /**
+     * Refreshes clients list
+     *
+     * @param clients
+     * @param statuses
+     */
     public synchronized void refreshClients(List<String> clients, List<String> statuses) {
         Platform.runLater(() -> {
             clientsListView.getItems().clear();
@@ -158,6 +174,9 @@ public class ServerFrame extends Application {
         });
     }
 
+    /**
+     * Stops the server
+     */
     private void stopServer() {
         startButton.setDisable(false);
         stopButton.setDisable(true);

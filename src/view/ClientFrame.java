@@ -23,6 +23,7 @@ import controller.ServerController;
 /**
  * Created by Vadim Shutenko on 20-Aug-18.
  *
+ * Clients part of the game
  */
 
 public class ClientFrame extends Application {
@@ -103,7 +104,7 @@ public class ClientFrame extends Application {
 
         stage.setOnCloseRequest((e) -> {
             if (controller != null) {
-                controller.closeThread();
+                controller.stopClient();
             }
         });
 
@@ -114,6 +115,10 @@ public class ClientFrame extends Application {
         port.setFocusTraversable(false);
     }
 
+    /**
+     * Adds listeners to controls
+     * @param scene
+     */
     private void addListeners(Scene scene) {
         port.textProperty().addListener((ObservableValue<? extends String> observable, String oldValue, String newValue) -> {
             if (!newValue.matches("\\d*")) {
@@ -167,14 +172,22 @@ public class ClientFrame extends Application {
         setClientStopped();
     }
 
+    /**
+     * Appends text log window
+     *
+     * @param text
+     */
     public synchronized void appendLog(String text) {
-        //Javafx cannot update UI from not the main thread
         Platform.runLater(() -> {
             log.appendText(text);
             log.appendText("\n");
         });
     }
 
+    /**
+     * Gets port number from text field
+     * @return  int value
+     */
     public int getPort() {
         try {
             return Integer.parseInt(port.getText());
@@ -183,6 +196,10 @@ public class ClientFrame extends Application {
         }
     }
 
+    /**
+     * Client's name
+     * @return
+     */
     public String getName() {
         return name.getText();
     }
@@ -193,6 +210,9 @@ public class ClientFrame extends Application {
         controller.stopClient();
     }
 
+    /**
+     * Informs GUI that the connection is lost
+     */
     public void informClientStopped() {
         Platform.runLater(() -> {
             appendLog("Client thread stopped");
@@ -201,12 +221,20 @@ public class ClientFrame extends Application {
         });
     }
 
+    /**
+     * Sets comments text
+     * @param text
+     */
     public void setComment(String text) {
         Platform.runLater(() -> {
             comment.setText(text);
         });
     }
 
+    /**
+     * Creates Maze picture
+     * @return  JavaFX group
+     */
     private Group lines() {
         Group group = new Group();
 
@@ -250,6 +278,9 @@ public class ClientFrame extends Application {
         return group;
     }
 
+    /**
+     * Redraws maze during the game process
+     */
     public void redrawMaze() {
         for (int r = 0; r < vLines.length; r++) {
             for (int c = 0; c < vLines[r].length; c++) {
@@ -279,6 +310,11 @@ public class ClientFrame extends Application {
         ball.setFill(controller.isBallOut() ? ballOut : ballIn);
     }
 
+    /**
+     * Sets ball'c coordinates
+     * @param r     row
+     * @param c     column
+     */
     public void setBallRC(int r, int c) {
         ball.setCenterX((c + 0.5) * wRect / nScreenCells);
         ball.setCenterY((r + 0.5) * wRect / nScreenCells);

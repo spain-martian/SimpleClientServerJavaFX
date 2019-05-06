@@ -6,10 +6,15 @@ import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
 
+import javafx.application.Platform;
 import view.ServerFrame;
 
 /**
  * Created by Vadim Shutenko on 20-Aug-18.
+ *
+ * Listens for new clients.
+ *
+ * Creates new clients threads after setting up the connection
  *
  */
 public class ServerController {
@@ -24,6 +29,13 @@ public class ServerController {
         ui = frame;
     }
 
+    /**
+     * Starts server
+     *
+     * @param textPort      port
+     * @param maxClients    max clients
+     * @return              true if success
+     */
     public boolean startServer(String textPort, String maxClients) {
         int port = checkPort(textPort);
         int max = checkMaxClients(maxClients);
@@ -68,6 +80,13 @@ public class ServerController {
         return true;
     }
 
+    /**
+     * Checks ports number that was inputted by user
+     * In case of error sets default port
+     *
+     * @param textPort  input text with port number
+     * @return          int value
+     */
     public int checkPort(String textPort) {
         int port = 0;
         try {
@@ -77,6 +96,13 @@ public class ServerController {
         return port;
     }
 
+    /**
+     * Checks max number of clients that was inputted by user
+     * In case of error sets default value
+     *
+     * @param text  input text with max clients number
+     * @return          int value
+     */
     public int checkMaxClients(String text) {
         int numClients = 0;
         try {
@@ -87,6 +113,11 @@ public class ServerController {
         return numClients;
     }
 
+    /**
+     * Disconnects client with given name
+     * @param name
+     * @return
+     */
     public synchronized boolean disconnectClient(String name) {
         for (ClientHandlingThread clientThread: clientThreads) {
             if (clientThread.getClientName().equals(name)) {
@@ -100,6 +131,9 @@ public class ServerController {
         return false;
     }
 
+    /**
+     * Disconnects all clients
+     */
     public synchronized void disconnectAllClients() {
         if (clientThreads != null) {
             while (clientThreads.size() > 0) {
@@ -108,21 +142,34 @@ public class ServerController {
         }
     }
 
+    /**
+     * Refreshes clients list in gui
+     */
     public synchronized void refreshGuiClients() {
-        List<String> clients = new LinkedList<>();
-        List<String> statuses = new LinkedList<>();
+        Platform.runLater(() -> {
+            try {
+                Thread.sleep(300);
+            } catch (Exception ignore) {}
+            List<String> clients = new LinkedList<>();
+            List<String> statuses = new LinkedList<>();
 
-        for (ClientHandlingThread clientThread: clientThreads) {
-            clients.add(clientThread.getClientName());
-            statuses.add(clientThread.getClientStatus());
-        }
-        ui.refreshClients(clients, statuses);
+            //remove interrupted threads from the list
+            for (int i = clientThreads.size() - 1; i >= 0; i--) {
+                if (!clientThreads.get(i).isAlive()) {
+                    clientThreads.remove(i);
+                }
+            }
+            for (ClientHandlingThread clientThread : clientThreads) {
+                clients.add(clientThread.getClientName());
+                statuses.add(clientThread.getClientStatus());
+            }
+            ui.refreshClients(clients, statuses);
+        });
     }
 
-    public synchronized void changeClientName(String name, String newName) {
-        refreshGuiClients();
-    }
-
+    /**
+     * Closes current thread
+     */
     public void closeThread() {
         try {
             serverSocket.close();

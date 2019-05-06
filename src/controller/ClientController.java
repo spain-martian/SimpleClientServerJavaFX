@@ -16,11 +16,13 @@ import view.ClientFrame;
 
 /**
  * Created by Vadim Shutenko on 20-Aug-18.
+ *
+ * Client's part controller
  */
 
 public class ClientController {
-    private ClientFrame frame;
-    private ClientGameDriver gameDriver;
+    private ClientFrame frame;  //gui
+    private ClientGameDriver gameDriver;    //game driver
 
     private Socket socket;
     private static final String hostName = "localhost";
@@ -28,12 +30,12 @@ public class ClientController {
     private ObjectInputStream answerStream;
     private Thread clientThread;
 
-    private int nScreenRows;
+    private int nScreenRows;        //maze size
     private int nScreenCols;
     private int addRow;
     private int addCol; //to get the real coordinates
 
-    private boolean ballOut;
+    private boolean ballOut; //When the ball is out, the game is over
 
     public ClientController(ClientFrame frame, int nScreenRows, int nScreenCols) {
         this.frame = frame;
@@ -50,7 +52,7 @@ public class ClientController {
 
         addRow = 0;
         addCol = 0;
-        gameDriver = new ClientGameDriver(nScreenRows, nScreenCols, 0, 0);
+        gameDriver = new ClientGameDriver();
 
         frame.redrawMaze();
 
@@ -79,7 +81,7 @@ public class ClientController {
                     }
                 } catch (Exception ex) {
                     frame.appendLog("Error reading socket.");
-                    ex.printStackTrace();
+                    //ex.printStackTrace();
                 }
                 stopClient();
             }
@@ -152,7 +154,7 @@ public class ClientController {
                         } else {
                             if (command.endsWith("no")) {
                                 gameDriver.addWall(dest, true);
-                                System.out.println("Game no move: " + dest);
+                                //System.out.println("Game no move: " + dest);
                                 comment = command.substring(0, 7) + ": wall";
                                 updateMaze();
                             } else {
@@ -181,7 +183,7 @@ public class ClientController {
         if (screenCol >= nScreenCols) {
             addCol -= screenCol - nScreenCols + 1;
         }
-        System.out.println("add r, c " + addRow + " " +  addCol);
+        //System.out.println("add r, c " + addRow + " " +  addCol);
         frame.redrawMaze();
     }
 
@@ -208,6 +210,9 @@ public class ClientController {
         } catch (Exception e) {
             frame.appendLog("Error closing client socket.");
         }
+        if (clientThread != null) {
+            clientThread.interrupt();
+        }
         frame.informClientStopped();
     }
 
@@ -228,25 +233,16 @@ public class ClientController {
     }
 
     public int getCurrentRow() {
-        System.out.println("scr r, c " + (gameDriver.getCurrentRow() + addRow) + " " +  (gameDriver.getCurrentCol() + addCol));
+        //System.out.println("scr r, c " + (gameDriver.getCurrentRow() + addRow) + " " +  (gameDriver.getCurrentCol() + addCol));
         return gameDriver.getCurrentRow() + addRow;
     }
 
     public int getCurrentCol() {
-        System.out.println("scr r, c " + (gameDriver.getCurrentRow() + addRow) + " " +  (gameDriver.getCurrentCol() + addCol));
+        //System.out.println("scr r, c " + (gameDriver.getCurrentRow() + addRow) + " " +  (gameDriver.getCurrentCol() + addCol));
         return gameDriver.getCurrentCol() + addCol;
     }
 
     public boolean isBallOut() {
         return ballOut;
-    }
-
-    public void closeThread() {
-        try {
-            socket.close();
-        } catch (Exception ignore) {}
-        if (clientThread != null) {
-            clientThread.interrupt();
-        }
     }
 }
